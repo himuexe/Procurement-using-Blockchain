@@ -1,66 +1,88 @@
-## Foundry
+# Blockchain-Based Procurement System
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This project implements a decentralized procurement system on the Ethereum blockchain using Solidity. It enables secure and transparent bidding while maintaining bidder anonymity through encryption. The project includes a smart contract deployed using Foundry and a frontend interface powered by Node.js.
 
-Foundry consists of:
+---
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+## Features
 
-## Documentation
+- **Owner Controls:**
+  - Set bidding duration.
+  - Whitelist or remove bidders.
+  - End the bidding process.
 
-https://book.getfoundry.sh/
+- **Bidder Features:**
+  - Submit encrypted bids while maintaining privacy.
+  - Check if whitelisted for participation.
 
-## Usage
+- **Post-Bidding:**
+  - Retrieve and display all submitted bids (accessible only by the owner).
+  - List whitelisted bidders.
 
-### Build
+- **Duration Tracking:**
+  - Display time remaining for bidding to end.
 
-```shell
-$ forge build
-```
+---
 
-### Test
+## Smart Contract Overview
 
-```shell
-$ forge test
-```
+The smart contract, `ProcurementContract.sol`, defines the core functionalities of the procurement system:
 
-### Format
+### Core Elements
 
-```shell
-$ forge fmt
-```
+- **Structs:**
+  - `Bid` stores the encrypted bid and corresponding bidder address.
 
-### Gas Snapshots
+- **State Variables:**
+  - `owner`: The address of the contract owner.
+  - `biddingEndTime`: Timestamp when bidding ends.
+  - `ended`: Status of the bidding process.
+  - `whitelist`: List of whitelisted addresses.
+  - `bids`: Mapping of bidder addresses to their bids.
+  - `bidders`: Array of bidder addresses.
 
-```shell
-$ forge snapshot
-```
+### Key Functions
 
-### Anvil
+- `setBidDuration(uint duration)`  
+  Sets the bidding duration.
 
-```shell
-$ anvil
-```
+- `whitelistBidder(address _bidder)`  
+  Adds a bidder to the whitelist.
 
-### Deploy
+- `removeWhitelistBidder(address _bidder)`  
+  Removes a bidder from the whitelist.
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
-```
+- `submitBid(bytes memory _Bid)`  
+  Allows whitelisted bidders to submit encrypted bids.
 
-### Cast
+- `endBidding()`  
+  Ends the bidding process.
 
-```shell
-$ cast <subcommand>
-```
+- `getBids()`  
+  Fetches all submitted bids and corresponding addresses (owner-only).
 
-### Help
+- `getWhitelist()`  
+  Retrieves the list of whitelisted addresses.
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
-```
+- `getDurationLeft()`  
+  Returns the time left for bidding to end.
+
+---
+
+## Installation and Setup
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) installed on your system.
+- [Foundry](https://book.getfoundry.sh/) installed for contract deployment.
+
+### Steps
+
+
+   ```bash
+   git clone https://github.com/Anirruth/Procurement-using-Blockchain.git
+   cd project-repository
+   cd project-frontend
+   npm install
+   npm start
+   
