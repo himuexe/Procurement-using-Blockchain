@@ -81,7 +81,7 @@ The smart contract, `ProcurementContract.sol`, defines the core functionalities 
 
    ```bash
    git clone https://github.com/Anirruth/Procurement-using-Blockchain.git
-   cd project-repository
+   cd Procurement-using-Blockchain
    cd project-frontend
    npm install
    npm start
