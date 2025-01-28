@@ -1,0 +1,150 @@
+/* Global Styles */
+body {
+    background-color: #ffffff;
+    /* White background for a clean look */
+    color: #333333;
+    /* Dark gray text for readability */
+    font-family: 'Arial', sans-serif;
+    /* Clean font */
+    margin: 0;
+    padding: 0;
+}
+
+/* Owner Page */
+.owner-page {
+    max-width: 800px;
+    /* Limit width for better readability */
+    margin: 0 auto;
+    /* Center the content */
+    padding: 20px;
+    /* Add padding */
+    border-radius: 10px;
+    /* Rounded corners */
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    /* Soft shadow for depth */
+    background-color: #f9f9f9;
+    /* Light gray for contrast with white background */
+}
+
+/* Headings */
+.page-heading,
+.details-heading,
+.list-heading {
+    font-size: 24px;
+    /* Large size for main headings */
+    margin-bottom: 15px;
+    /* Spacing below headings */
+    text-transform: uppercase;
+    /* Uppercase for a modern look */
+    letter-spacing: 1px;
+    /* Slightly spaced letters */
+    color: #444444;
+    /* Darker text for headings */
+    opacity: 0;
+    /* Start invisible for fade-in effect */
+    animation: fadeIn 0.5s forwards;
+    /* Fade-in animation */
+}
+
+/* Input Fields */
+.input-field {
+    width: 100%;
+    /* Full width */
+    padding: 10px;
+    /* Padding inside the field */
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    /* Light border */
+    border-radius: 5px;
+    /* Rounded corners */
+    background-color: #ffffff;
+    /* White background */
+    color: #333333;
+    /* Dark text */
+    transition: border-color 0.3s;
+    /* Transition for border color */
+}
+
+/* Button Styles */
+.action-button {
+    background-color: #4a90e2;
+    /* Soft blue background */
+    color: #ffffff;
+    /* White text */
+    border: none;
+    /* No border */
+    border-radius: 5px;
+    /* Rounded corners */
+    padding: 10px 20px;
+    /* Padding inside the button */
+    cursor: pointer;
+    /* Pointer cursor */
+    transition: background-color 0.3s, transform 0.3s;
+    /* Smooth transitions */
+    opacity: 0;
+    /* Start invisible for fade-in */
+    animation: fadeIn 0.5s forwards;
+    /* Fade-in animation */
+}
+
+.action-button:hover {
+    background-color: #357abf;
+    /* Darker blue on hover */
+    transform: translateY(-2px);
+    /* Lift effect on hover */
+}
+
+/* Animation Keyframes */
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        /* Fade to fully visible */
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateY(20px);
+        /* Slide in from below */
+        opacity: 0;
+        /* Start invisible */
+    }
+
+    to {
+        transform: translateY(0);
+        /* End at original position */
+        opacity: 1;
+        /* Fully visible */
+    }
+}
+
+/* List Styles */
+.deployed-contracts-list {
+    list-style-type: none;
+    /* Remove default bullets */
+    padding: 0;
+    /* Remove default padding */
+    margin: 20px 0;
+    /* Margin above and below */
+}
+
+.contract-item {
+    background-color: #e3f2fd;
+    /* Light blue background for contrast */
+    border-radius: 8px;
+    /* Rounded corners */
+    padding: 15px;
+    /* Padding around text */
+    margin: 10px 0;
+    /* Space between items */
+    transition: background-color 0.3s, transform 0.3s;
+    /* Smooth transitions */
+    color: #333333;
+    /* Dark text for readability */
+}
+
+.contract-item:hover {
+    background-color: #bbdefb;
+    /* Darker background on hover */
+    transform: scale(1.03);
+    /* Slightly scale up on hover */
+}

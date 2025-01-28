@@ -1,0 +1,90 @@
+/* Global Container */
+.homepage-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+    background-color: #f5f7fa;
+    color: #333;
+}
+
+/* Main Heading */
+.main-heading {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+/* Description */
+.homepage-description {
+    font-size: 1.2rem;
+    color: #555;
+    margin-bottom: 30px;
+}
+
+/* Button Group Layout */
+.button-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Individual Button Item */
+.button-item {
+    text-align: center;
+    max-width: 250px;
+    margin-bottom: 20px;
+}
+
+/* Button Description */
+.button-description {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Buttons */
+.navigation-button {
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: transform 0.3s, background-color 0.3s;
+}
+
+/* Home Button */
+.home-button {
+    background-color: #8e44ad;
+    color: #fff;
+}
+
+.home-button:hover {
+    background-color: #732d91;
+    transform: translateY(-3px);
+}
+
+/* Bidder Button */
+.bidder-button {
+    background-color: #3498db;
+    color: #fff;
+}
+
+.bidder-button:hover {
+    background-color: #2980b9;
+    transform: translateY(-3px);
+}
+
+/* Owner Button */
+.owner-button {
+    background-color: #2ecc71;
+    color: #fff;
+}
+
+.owner-button:hover {
+    background-color: #27ae60;
+    transform: translateY(-3px);
+}

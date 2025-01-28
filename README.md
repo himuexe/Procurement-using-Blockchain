@@ -1,6 +1,6 @@
 # Blockchain-Based Procurement System
 
-This project implements a decentralized procurement system on the Ethereum blockchain using Solidity. It enables secure and transparent bidding while maintaining bidder anonymity through encryption. The project includes a smart contract deployed using Foundry and a frontend interface powered by Node.js.
+This project implements a decentralized procurement system on the Ethereum blockchain using Solidity. It enables secure and transparent bidding. The project includes a smart contract deployed using Foundry.
 
 ---
 
