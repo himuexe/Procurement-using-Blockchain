@@ -3,7 +3,6 @@ import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import ProcurementContract from './ProcurementContract.json';
 import ProcurementFactory from './ProcurementFactory.json';
-import './OwnerPage.css';
 
 const OwnerPage = ({ account }) => {
     const [factoryContract, setFactoryContract] = useState(null);
@@ -85,6 +84,7 @@ const OwnerPage = ({ account }) => {
             return;
         }
 
+        setLoading(true);
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
 
@@ -93,13 +93,19 @@ const OwnerPage = ({ account }) => {
             setContract(instance);
 
             const isOwner = await fetchContractOwner(instance);
-            if (!isOwner) return;
+            if (!isOwner) {
+                setLoading(false);
+                return;
+            }
 
             await fetchBiddingEndTime(instance);
-            await fetchWhitelistedAddresses(instance); // Fetch whitelisted addresses on load
+            await fetchWhitelistedAddresses(instance);
+            await fetchBids(instance);
         } catch (error) {
             console.error("Error fetching contract data:", error);
             toast.error("Failed to load contract data. Please check the contract address.");
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -125,6 +131,7 @@ const OwnerPage = ({ account }) => {
     };
 
     const createContract = async () => {
+        setLoading(true);
         const toastId = toast.loading("Creating contract...");
         try {
             const tx = await factoryContract.createProcurementContract();
@@ -135,7 +142,7 @@ const OwnerPage = ({ account }) => {
                 isLoading: false,
                 autoClose: 5000,
             });
-            fetchDeployedContracts(factoryContract); // Fetch updated list of contracts
+            fetchDeployedContracts(factoryContract);
         } catch (error) {
             console.error("Error creating contract:", error);
             toast.update(toastId, {
@@ -144,6 +151,8 @@ const OwnerPage = ({ account }) => {
                 isLoading: false,
                 autoClose: 5000,
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -153,14 +162,9 @@ const OwnerPage = ({ account }) => {
             return;
         }
 
+        setLoading(true);
         const toastId = toast.loading("Setting bid duration...");
         try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const latestBlock = await provider.getBlock('latest');
-            const currentTimestamp = latestBlock.timestamp;
-
-            const endTimeInSeconds = currentTimestamp + parseInt(duration);
-
             const tx = await contract.setBidDuration(duration);
             await tx.wait();
 
@@ -170,6 +174,8 @@ const OwnerPage = ({ account }) => {
                 isLoading: false,
                 autoClose: 5000,
             });
+            
+            await fetchBiddingEndTime(contract);
         } catch (error) {
             console.error("Error setting bid duration:", error);
             toast.update(toastId, {
@@ -178,6 +184,8 @@ const OwnerPage = ({ account }) => {
                 isLoading: false,
                 autoClose: 5000,
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -187,6 +195,7 @@ const OwnerPage = ({ account }) => {
             return;
         }
 
+        setLoading(true);
         const toastId = toast.loading("Adding to whitelist...");
         try {
             const tx = await contract.whitelistBidder(whitelistAddress);
@@ -198,7 +207,8 @@ const OwnerPage = ({ account }) => {
                 autoClose: 5000,
             });
 
-            fetchWhitelistedAddresses();
+            await fetchWhitelistedAddresses(contract);
+            setWhitelistAddress('');
         } catch (error) {
             console.error("Error adding to whitelist:", error);
             toast.update(toastId, {
@@ -207,6 +217,8 @@ const OwnerPage = ({ account }) => {
                 isLoading: false,
                 autoClose: 5000,
             });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -216,23 +228,10 @@ const OwnerPage = ({ account }) => {
             return;
         }
     
-        // Check if the address is whitelisted before removing
-        try {
-            const isWhitelisted = await contract.isWhitelisted(removeAddress);  // assuming this function exists
-            if (!isWhitelisted) {
-                toast.error("The address is not whitelisted.");
-                return;
-            }
-        } catch (error) {
-            console.error("Error checking if address is whitelisted:", error);
-            toast.error("Error checking address status.");
-            return;
-        }
-    
+        setLoading(true);
         const toastId = toast.loading("Removing from whitelist...");
         try {
-            // Ensure the function name matches your contract
-            const tx = await contract.removeWhitelistBidder(removeAddress);  // Use correct function name
+            const tx = await contract.removeWhitelistBidder(removeAddress);
             await tx.wait();
     
             toast.update(toastId, {
@@ -242,7 +241,8 @@ const OwnerPage = ({ account }) => {
                 autoClose: 5000,
             });
     
-            fetchWhitelistedAddresses();  // Re-fetch the updated whitelist
+            await fetchWhitelistedAddresses(contract);
+            setRemoveAddress('');
         } catch (error) {
             console.error("Error removing from whitelist:", error);
             toast.update(toastId, {
@@ -251,14 +251,16 @@ const OwnerPage = ({ account }) => {
                 isLoading: false,
                 autoClose: 5000,
             });
+        } finally {
+            setLoading(false);
         }
     };
 
-    const fetchWhitelistedAddresses = async () => {
-        if (!contract) return;
+    const fetchWhitelistedAddresses = async (contractInstance = contract) => {
+        if (!contractInstance) return;
 
         try {
-            const addresses = await contract.getWhitelist();
+            const addresses = await contractInstance.getWhitelist();
             setWhitelistedAddresses(addresses);
         } catch (error) {
             console.error("Error fetching whitelisted addresses:", error);
@@ -272,6 +274,7 @@ const OwnerPage = ({ account }) => {
             return;
         }
 
+        setLoading(true);
         const toastId = toast.loading("Ending bidding...");
         try {
             const tx = await contract.endBidding();
@@ -283,7 +286,8 @@ const OwnerPage = ({ account }) => {
                 autoClose: 5000,
             });
 
-            fetchBids(); // Update bids after ending
+            await fetchBids();
+            await fetchBiddingEndTime(contract);
         } catch (error) {
             console.error("Error ending bidding:", error);
             toast.update(toastId, {
@@ -292,18 +296,43 @@ const OwnerPage = ({ account }) => {
                 isLoading: false,
                 autoClose: 5000,
             });
+        } finally {
+            setLoading(false);
         }
     };
 
-    const hexToUint8Array = (hex) => {
-        const length = hex.length / 2;
-        const bytes = new Uint8Array(length);
-        for (let i = 0; i < length; i++) {
-            bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
+    const fetchBids = async (contractInstance = contract) => {
+        if (!contractInstance) return;
+    
+        try {
+            const [encryptedBids, encryptedAddresses] = await contractInstance.getBids();
+            const currentBids = [];
+    
+            for (let i = 0; i < encryptedBids.length; i++) {
+                const encryptedBid = encryptedBids[i];
+                const encryptedAddress = encryptedAddresses[i];
+    
+                if (!encryptedBid || !encryptedAddress) {
+                    continue;
+                }
+    
+                const bidBytes = Uint8Array.from(encryptedBid.slice(2).match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                const bidAmount = new TextDecoder().decode(bidBytes).trim();
+    
+                const addressBytes = Uint8Array.from(encryptedAddress.slice(2).match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
+                const addressHex = `0x${Array.from(addressBytes).map(byte => ('0' + byte.toString(16)).slice(-2)).join('')}`;
+    
+                const formattedBid = `Address: ${addressHex}, Amount: ${bidAmount}`;
+                currentBids.push(formattedBid);
+            }
+    
+            setBids(currentBids);
+        } catch (error) {
+            console.error("Error fetching bids:", error);
+            toast.error("Failed to fetch bids.");
         }
-        return bytes;
     };
-
+    
     const getLowestBid = () => {
         if (bids.length === 0) return { address: "No bids yet", amount: "N/A" };
         let lowestBid = { address: "", amount: Infinity };
@@ -319,162 +348,264 @@ const OwnerPage = ({ account }) => {
         return lowestBid;
     };
 
-    const fetchBids = async () => {
-        if (!contract) {
-            toast.error("Contract is not loaded.");
-            return;
-        }
-    
-        try {
-            // Fetch encrypted bids and addresses
-            const [encryptedBids, encryptedAddresses] = await contract.getBids();
-    
-            console.log("Encrypted Bids:", encryptedBids);
-            console.log("Encrypted Addresses:", encryptedAddresses);
-    
-            const currentBids = [];
-    
-            for (let i = 0; i < encryptedBids.length; i++) {
-                const encryptedBid = encryptedBids[i];
-                const encryptedAddress = encryptedAddresses[i];
-    
-                // Ensure the encrypted bid and address are not empty
-                if (!encryptedBid || !encryptedAddress) {
-                    console.warn("Empty encrypted bid or address:", encryptedBid, encryptedAddress);
-                    continue; // Skip to the next iteration
-                }
-    
-                // Convert the encrypted bid to a Uint8Array
-                const bidBytes = Uint8Array.from(encryptedBid.slice(2).match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-    
-                // Decode the bid bytes back to a string
-                const bidAmount = new TextDecoder().decode(bidBytes).trim(); // This should directly give you the string representation of the amount
-    
-                // Convert the address bytes to hex string
-                const addressBytes = Uint8Array.from(encryptedAddress.slice(2).match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
-                const addressHex = `0x${Array.from(addressBytes).map(byte => ('0' + byte.toString(16)).slice(-2)).join('')}`;
-    
-                // Format the bid string for display
-                const formattedBid = `Address: ${addressHex}, Amount: ${bidAmount}`; // Display the raw amount as inputted
-                currentBids.push(formattedBid);
-            }
-    
-            setBids(currentBids); // Set the bids as formatted strings
-        } catch (error) {
-            console.error("Error fetching bids:", error);
-            toast.error("Failed to fetch bids.");
-        }
+    const shortenAddress = (address) => {
+        if (!address) return "";
+        return `${address.slice(0, 6)}...${address.slice(-4)}`;
     };
-    
-    
-      
+
     return (
-        <div className="owner-page">
-            <h1 className="page-heading fade-in">Owner Page</h1>
-            <div className="input-container">
-                <input
-                    type="text"
-                    placeholder="Contract Address"
-                    value={contractAddress}
-                    onChange={(e) => setContractAddress(e.target.value)}
-                    className="input-field slide-in"
-                />
-                <div className="button-container">
-                    <button onClick={fetchContract} className="action-button zoom-in">Load Contract</button>
-                    <button onClick={createContract} className="action-button zoom-in">Create Contract</button>
-                </div>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden">
+            <div className="p-6 bg-indigo-700 text-white">
+                <h1 className="text-2xl font-bold">Owner Dashboard</h1>
+                <p className="text-indigo-200 mt-1">Manage your procurement contracts</p>
             </div>
-    
-            {contract && (
-                <div className="contract-details">
-                    <h2 className="details-heading bounce-in">Contract Details</h2>
-                    <div className="contract-info">
-                        <p className="contract-owner"><strong>Owner:</strong> {contractOwner}</p>
-                        <p className="bidding-end-time"><strong>Bidding Ends In:</strong> {biddingEndTime}</p>
-                        <p className="lowest-bid">
-                        <strong>Lowest Bid:</strong> {getLowestBid().amount} by {getLowestBid().address}
+            
+            <div className="p-6">
+                <div className="flex flex-col md:flex-row gap-4 mb-8">
+                    <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Contract Address
+                        </label>
+                        <input
+                            type="text"
+                            placeholder="Contract Address"
+                            value={contractAddress}
+                            onChange={(e) => setContractAddress(e.target.value)}
+                            className="w-full border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+                    <div className="flex gap-2 items-end">
+                        <button 
+                            onClick={fetchContract} 
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                            disabled={loading}
+                        >
+                            {loading ? 'Loading...' : 'Load Contract'}
+                        </button>
+                        <button 
+                            onClick={createContract} 
+                            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                            disabled={loading}
+                        >
+                            {loading ? 'Creating...' : 'Create Contract'}
+                        </button>
+                    </div>
+                </div>
+
+                {contract && (
+                    <div className="space-y-8">
+                        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm">
+                            <h2 className="text-lg font-medium text-gray-900 mb-4">Contract Details</h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                    <p className="text-xs text-gray-500">Owner</p>
+                                    <p className="text-sm font-medium truncate" title={contractOwner}>
+                                        {contractOwner ? shortenAddress(contractOwner) : 'N/A'}
+                                    </p>
+                                </div>
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                    <p className="text-xs text-gray-500">Bidding Ends In</p>
+                                    <p className="text-sm font-medium text-indigo-600">
+                                        {biddingEndTime || '00:00:00'}
+                                    </p>
+                                </div>
+                                <div className="bg-white p-3 rounded border border-gray-200">
+                                    <p className="text-xs text-gray-500">Lowest Bid</p>
+                                    <p className="text-sm font-medium">
+                                        {getLowestBid().amount !== "N/A" ? 
+                                            `$${getLowestBid().amount} by ${shortenAddress(getLowestBid().address)}` : 
+                                            'No bids yet'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">Bid Duration</h3>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Duration in seconds"
+                                        value={duration}
+                                        onChange={(e) => setDuration(e.target.value)}
+                                        className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    />
+                                    <button 
+                                        onClick={setBidDuration} 
+                                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                        disabled={loading}
+                                    >
+                                        Set Duration
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">Bid Management</h3>
+                                <div className="flex gap-2">
+                                    <button 
+                                        onClick={fetchBids} 
+                                        className="flex-1 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                    >
+                                        Refresh Bids
+                                    </button>
+                                    <button 
+                                        onClick={endBidding} 
+                                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                        disabled={loading}
+                                    >
+                                        End Bidding
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">Whitelist Management</h3>
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Add to Whitelist
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Bidder Address"
+                                                value={whitelistAddress}
+                                                onChange={(e) => setWhitelistAddress(e.target.value)}
+                                                className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            />
+                                            <button 
+                                                onClick={addToWhitelist} 
+                                                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                                                disabled={loading}
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            Remove from Whitelist
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="Bidder Address"
+                                                value={removeAddress}
+                                                onChange={(e) => setRemoveAddress(e.target.value)}
+                                                className="flex-1 border border-gray-300 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                            />
+                                            <button 
+                                                onClick={removeFromWhitelist} 
+                                                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+                                                disabled={loading}
+                                            >
+                                                Remove
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                                <h3 className="text-lg font-medium text-gray-900 mb-4">Whitelisted Addresses</h3>
+                                {whitelistedAddresses.length > 0 ? (
+                                    <div className="max-h-40 overflow-y-auto bg-gray-50 rounded border border-gray-200">
+                                        <ul className="divide-y divide-gray-200">
+                                            {whitelistedAddresses.map((address, index) => (
+                                                <li key={index} className="px-4 py-2 hover:bg-gray-100 truncate" title={address}>
+                                                    {address}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500 text-sm">No addresses whitelisted yet</p>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Submitted Bids</h3>
+                            {bids.length > 0 ? (
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full divide-y divide-gray-300">
+                                        <thead>
+                                            <tr className="bg-gray-50">
+                                                <th scope="col" className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900">Bidder Address</th>
+                                                <th scope="col" className="py-3.5 px-3 text-left text-sm font-semibold text-gray-900">Bid Amount (USD)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-gray-200">
+                                            {bids.map((bid, index) => {
+                                                const [address, amount] = bid.split(', Amount: ');
+                                                return (
+                                                    <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                                        <td className="py-4 pl-4 pr-3 text-sm font-medium text-gray-900 truncate" title={address.replace('Address: ', '')}>
+                                                            {address.replace('Address: ', '')}
+                                                        </td>
+                                                        <td className="py-4 px-3 text-sm text-gray-500">
+                                                            ${amount}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <p className="text-gray-500 text-sm">No bids submitted yet</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+                
+                {!contract && (
+                    <div className="bg-gray-50 p-8 rounded-lg text-center border border-gray-200">
+                        <p className="text-lg text-gray-600">
+                            Load an existing contract or create a new one to get started
                         </p>
                     </div>
-    
-                    <div className="action-section">
-                        <input
-                            type="text"
-                            placeholder="Bid Duration (in seconds)"
-                            value={duration}
-                            onChange={(e) => setDuration(e.target.value)}
-                            className="input-field slide-in"
-                        />
-                        <button onClick={setBidDuration} className="action-button zoom-in">Set Bid Duration</button>
-                    </div>
-    
-                    <div className="action-section">
-                        <input
-                            type="text"
-                            placeholder="Address to Whitelist"
-                            value={whitelistAddress}
-                            onChange={(e) => setWhitelistAddress(e.target.value)}
-                            className="input-field slide-in"
-                        />
-                        <button onClick={addToWhitelist} className="action-button zoom-in">Add to Whitelist</button>
-                    </div>
-    
-                    <div className="action-section">
-                        <input
-                            type="text"
-                            placeholder="Address to Remove from Whitelist"
-                            value={removeAddress}
-                            onChange={(e) => setRemoveAddress(e.target.value)}
-                            className="input-field slide-in"
-                        />
-                        <button onClick={removeFromWhitelist} className="action-button zoom-in">Remove from Whitelist</button>
-                    </div>
-    
-                    <h3 className="list-heading highlight fade-in small-heading">Whitelisted Addresses:</h3>
-                    <ul className="slide-in">
-                        {whitelistedAddresses.map((address, index) => (
-                            <li key={index} className="highlight-list-item">{address}</li>
-                        ))}
-                    </ul>
-    
-                    <div className="button-container" style={{ marginTop: '20px' }}>
-                        <button onClick={() => fetchBids()} className="action-button check-bids-button zoom-in">Check All Bids</button>
-                        <button onClick={endBidding} className="action-button end-bidding-button zoom-in">End Bidding</button>
-                    </div>
-    
-                    <h3 className="list-heading bounce-in">Bids:</h3>
-                    <table className="bids-table">
-                        <thead>
-                            <tr>
-                                <th>Bidder Address</th>
-                                <th>Bid Amount</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {bids.map((bid, index) => {
-                                const [address, amount] = bid.split(', Amount: ');
-                                return (
-                                    <tr key={index}>
-                                        <td>{address.replace('Address: ', '')}</td>
-                                        <td>{amount}</td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                )}
+                
+                <div className="mt-8">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">Your Deployed Contracts</h3>
+                    {deployedContracts.length > 0 ? (
+                        <div className="bg-gray-50 rounded-lg border border-gray-200 p-4 max-h-60 overflow-y-auto">
+                            <ul className="divide-y divide-gray-200">
+                                {deployedContracts.map((addr, index) => (
+                                    <li 
+                                        key={index} 
+                                        className="py-3 flex items-center justify-between hover:bg-gray-100 px-3 rounded cursor-pointer"
+                                        onClick={() => setContractAddress(addr)}
+                                    >
+                                        <span className="text-sm font-medium text-gray-900 truncate" title={addr}>
+                                            {addr}
+                                        </span>
+                                        <button 
+                                            className="ml-2 text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded hover:bg-indigo-200"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setContractAddress(addr);
+                                                fetchContract();
+                                            }}
+                                        >
+                                            Load
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-sm">No contracts deployed yet</p>
+                    )}
                 </div>
-            )}
-    
-            <h3 className="list-heading fade-in" style={{ marginTop: '40px' }}>Deployed Contracts:</h3>
-            <ul className="deployed-contracts-list">
-                {deployedContracts.map((addr, index) => (
-                    <li key={index} className="fade-in contract-item">
-                        {addr}
-                    </li>
-                ))}
-            </ul>
+            </div>
         </div>
     );
-    
-};    
+};
 
 export default OwnerPage;
